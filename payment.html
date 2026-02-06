@@ -198,11 +198,10 @@ function sendOrder(){
     const statusText = document.getElementById("success");
     statusText.style.display = "none";
 
-    const TOKEN = "8514813969:AAFkIE6dsAiQs2IrgPWd3xV6WTKDyupF05g";
-    const CHAT_ID = "426389082";
+const itemName = localStorage.getItem("itemName");
+const itemAmount = localStorage.getItem("itemAmount");
 
-    const orderId = Date.now();
-    const message = 
+const message = 
 `🆕 НОВЫЙ ЗАКАЗ
 🆔 Заказ: #${orderId}
 
@@ -210,8 +209,9 @@ function sendOrder(){
 📧 Email: ${email}
 🎮 ID игрока: ${playerID}
 
-💎 Товар: ${selectedItem}
+💎 Товар: ${itemAmount} ${itemName}
 💳 Оплата: QR`;
+
 
     fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
         method:"POST",
@@ -241,4 +241,5 @@ function goBack(){
 </script>
 </body>
 </html>
+
 
