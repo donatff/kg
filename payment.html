@@ -105,7 +105,12 @@ button.history{
 </head>
 <body>
     <script>
-
+if(!localStorage.getItem("username")){
+    localStorage.setItem("username", "Тестовый игрок");
+    localStorage.setItem("playerID",);
+    localStorage.setItem("email",);
+    localStorage.setItem("selectedItem",);
+}
 </script>
 
 
@@ -236,6 +241,7 @@ function goBack(){
 </script>
 </body>
 </html>
+
 
 
 
