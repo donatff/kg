@@ -47,6 +47,14 @@ img.qr{
     margin-bottom:20px;
     border-radius:15px;
 }
+input{
+    width:80%;
+    padding:10px;
+    margin:10px 0;
+    border-radius:10px;
+    border:none;
+    font-size:16px;
+}
 button{
     padding:12px 30px;
     font-size:16px;
@@ -104,27 +112,27 @@ button.history{
 </style>
 </head>
 <body>
-    <input type="text" id="playerID" placeholder="Введите ваш ID">
-
 
 <div class="container">
     <h2>💳 Оплата заказа</h2>
 
     <div class="warning">
         ❗ ВАЖНО!<br>
-        Обязательно укажите <u>ID игрока</u> при оплате.<br>
-        ❌ Без ID заказ НЕ ОБРАБАТЫВАЕТСЯ
+        Обязательно укажите <u>ID игрока</u> и <u>Email</u> при оплате.<br>
+        ❌ Без этих данных заказ НЕ ОБРАБАТЫВАЕТСЯ
     </div>
+
+    <input type="text" id="playerID" placeholder="Введите ваш ID">
+    <input type="email" id="email" placeholder="Введите ваш Email">
 
     <img src="QRkode.jpg" alt="QR-код" class="qr">
     <p>Оплатите заказ и подтвердите ниже</p>
 
     <label>
-        <input type="checkbox" id="agreeCheck"> Я оплатил и указал свой ID
+        <input type="checkbox" id="agreeCheck"> Я оплатил и указал свой ID и Email
     </label>
 
     <br><br>
-
     <button class="pay" id="payBtn" disabled>Я оплатил</button>
     <div class="loader" id="loader">⏳</div>
     <div class="success" id="success">✅</div>
@@ -141,35 +149,10 @@ button.history{
 </div>
 
 <script>
-    const playerID = document.getElementById("playerID").value;
-
-if(!playerID){
-    alert("Введите ID перед оплатой");
-    return; // не отправляем пустой запрос
-}
-
-    // Проверяем, что есть ID и Email
-if(!localStorage.getItem("playerID") || !localStorage.getItem("email")){
-    alert("Пожалуйста, укажите ID игрока и Email перед оплатой");
-} else {
-    // Отправка данных на сервер
-    fetch('https://kg-psi.vercel.app/api/payment', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            playerID: localStorage.getItem("playerID"),
-            email: localStorage.getItem("email"),
-            item: localStorage.getItem("selectedItem")
-        })
-    })
-    .then(res => res.json())
-    .then(data => console.log(data))
-    .catch(err => console.error(err));
-}
-
-// Галочка активирует кнопку
 const agreeCheck = document.getElementById("agreeCheck");
 const payBtn = document.getElementById("payBtn");
+
+// Галочка активирует кнопку
 agreeCheck.addEventListener("change", function(){
     payBtn.disabled = !this.checked;
     if(this.checked) payBtn.classList.add("active");
@@ -183,9 +166,8 @@ function addPaymentHistory(username, item, amount, date){
     localStorage.setItem('paymentHistory', JSON.stringify(history));
 }
 
-const historyBtn = document.getElementById('historyBtn');
-historyBtn.addEventListener('click', function(){
-    const username = localStorage.getItem('username');
+document.getElementById('historyBtn').addEventListener('click', function(){
+    const username = "Игрок"; // или можно добавить поле для имени
     const history = JSON.parse(localStorage.getItem('paymentHistory') || '[]')
                         .filter(entry => entry.username === username);
     const content = document.getElementById('historyContent');
@@ -199,16 +181,14 @@ function closeHistory(){
 }
 
 // Отправка заказа
-payBtn.addEventListener("click", sendOrder);
+payBtn.addEventListener("click", function(){
+    const playerID = document.getElementById("playerID").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const selectedItem = "100 кристаллов"; // можно менять на выбранный товар
+    const username = "Игрок"; // можно добавить поле для имени
 
-function sendOrder(){
-    const playerID = localStorage.getItem("playerID");
-    const selectedItem = localStorage.getItem("selectedItem");
-    const username = localStorage.getItem("username");
-    const email = localStorage.getItem("email");
-
-    if(!playerID || !selectedItem || !username || !email){
-        alert("❌ Ошибка данных. Вернитесь и начните заново.");
+    if(!playerID || !email){
+        alert("❌ Пожалуйста, заполните ID игрока и Email!");
         return;
     }
 
@@ -232,7 +212,6 @@ function sendOrder(){
 💎 Товар: ${selectedItem}
 💳 Оплата: QR`;
 
-    // Отправка через GET для уменьшения проблем с CORS
     fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(message)}`)
     .then(response => {
         document.getElementById("loader").style.display = "none";
@@ -249,25 +228,11 @@ function sendOrder(){
         alert("❌ Ошибка отправки. Попробуйте позже.");
         payBtn.disabled = false;
     });
-}
+});
 
 function goBack(){
     window.location.href = "shop.html";
 }
-    fetch('https://kg-psi.vercel.app/api/payment', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    playerID: document.getElementById('playerID').value,
-    email: document.getElementById('email').value
-  })
-})
-.then(res => res.json())
-.then(data => console.log(data))
-.catch(err => console.error(err));
-
 </script>
 </body>
 </html>
-
-
