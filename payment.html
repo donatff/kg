@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Оплата заказа — Free Fire</title>
-
 <style>
 body{
     margin:0;
@@ -18,23 +17,30 @@ body{
 }
 .container{
     text-align:center;
-    background:rgba(0,0,0,.85);
+    background:rgba(0,0,0,0.85);
     padding:30px;
     border-radius:20px;
+    box-shadow:0 0 30px rgba(0,0,0,0.7);
     max-width:400px;
     width:100%;
 }
-h2{color:#FFD700}
+h2{color:#FFD700;}
 .warning{
-    background:#c40000;
+    background:#ff0000;
     padding:15px;
     border-radius:12px;
     margin-bottom:20px;
     font-weight:bold;
+    animation: blink 1s infinite;
+}
+@keyframes blink {
+    0% { opacity:1; box-shadow:0 0 5px red;}
+    50% { opacity:0.6; box-shadow:0 0 25px red;}
+    100% { opacity:1; box-shadow:0 0 5px red;}
 }
 img.qr{
     width:200px;
-    margin:20px 0;
+    margin-bottom:20px;
     border-radius:15px;
 }
 button{
@@ -42,14 +48,17 @@ button{
     border:none;
     border-radius:25px;
     cursor:pointer;
-    margin:8px;
+    margin:10px;
     font-weight:bold;
 }
 .pay{
     background:linear-gradient(45deg,#ffcc00,#ff5500);
     color:black;
 }
-.pay:disabled{background:gray;cursor:not-allowed}
+.pay:disabled{
+    background:gray;
+    cursor:not-allowed;
+}
 .back{
     background:linear-gradient(45deg,#00BFFF,#007BFF);
     color:white;
@@ -64,7 +73,7 @@ button{
     position:fixed;
     inset:0;
     background:rgba(0,0,0,.85);
-    padding:40px;
+    padding:50px;
 }
 </style>
 </head>
@@ -75,15 +84,13 @@ button{
     <h2>💳 Оплата заказа</h2>
 
     <div class="warning">
-        ❗ Укажите <u>ID игрока</u> в сообщении банка<br>
-        ❌ Без ID заказ не обрабатывается
+        ❗ ВАЖНО! Укажите <u>ID игрока</u> при оплате  
+        <br>❌ Без ID заказ НЕ обрабатывается
     </div>
-
-    <div id="orderInfo"></div>
 
     <img src="QRkode.jpg" class="qr">
 
-    <p>После оплаты подтвердите ниже</p>
+    <p>Оплатите заказ и подтвердите ниже</p>
 
     <label>
         <input type="checkbox" id="agreeCheck">
@@ -104,77 +111,75 @@ button{
 </div>
 
 <script>
-// данные
-const selected = JSON.parse(localStorage.getItem("selectedPackage"));
-const playerID = localStorage.getItem("playerID");
-const username = localStorage.getItem("username") || "Гость";
+// ТВОЙ TELEGRAM BOT
+const TOKEN = "ВАШ_ТОКЕН_БОТА"; // <-- вставь сюда токен бота
+const CHAT_ID = "ВАШ_CHAT_ID";    // <-- вставь сюда свой chat_id
 
-// вывод заказа
-const orderInfo = document.getElementById("orderInfo");
-if(!selected){
-    alert("❌ Пакет не выбран");
-    window.location.href="shop.html";
-}
-orderInfo.innerHTML = `
-<p><b>Пакет:</b> ${selected.name}</p>
-<p><b>Сумма:</b> ${selected.price} сом</p>
-<p><b>ID игрока:</b> ${playerID || "не указан"}</p>
-`;
+// активация кнопки
+const agreeCheck = document.getElementById("agreeCheck");
+const payBtn = document.getElementById("payBtn");
 
-// чекбокс
 agreeCheck.onchange = () => {
     payBtn.disabled = !agreeCheck.checked;
 };
 
 // история
-function addHistory(entry){
+function addPaymentHistory(entry){
     const h = JSON.parse(localStorage.getItem("paymentHistory") || "[]");
     h.push(entry);
     localStorage.setItem("paymentHistory", JSON.stringify(h));
 }
 
-historyBtn.onclick = () => {
-    const h = JSON.parse(localStorage.getItem("paymentHistory") || "[]")
-        .filter(e=>e.username===username);
-
-    historyContent.innerHTML = h.length
-        ? h.map(e=>`<p>${e.date} — ${e.item} — ${e.amount} сом</p>`).join("")
+document.getElementById("historyBtn").onclick = () => {
+    const h = JSON.parse(localStorage.getItem("paymentHistory") || "[]");
+    const box = document.getElementById("historyContent");
+    box.innerHTML = h.length
+        ? h.map(e=>`<p>${e.date} — ${e.item}</p>`).join("")
         : "<p>История пуста</p>";
-
-    historyModal.style.display="block";
+    document.getElementById("historyModal").style.display="block";
 };
 
 function closeHistory(){
-    historyModal.style.display="none";
+    document.getElementById("historyModal").style.display="none";
 }
 
-// подтверждение оплаты
+// отправка
 payBtn.onclick = () => {
-    if(!playerID){
-        alert("❌ ID игрока не найден");
+    const playerID = localStorage.getItem("playerID");
+    const username = localStorage.getItem("username");
+    const selectedItemObj = JSON.parse(localStorage.getItem("selectedPackage") || '{}');
+    const item = selectedItemObj.name || "Донат Free Fire";
+
+    if(!playerID || !username){
+        alert("❌ Не найдены данные: никнейм или ID игрока");
         return;
     }
 
     const orderId = Date.now();
-
-    const text = encodeURIComponent(
+    const message = 
 `🆕 НОВЫЙ ЗАКАЗ
 🆔 Заказ: #${orderId}
-👤 Пользователь: ${username}
+👤 Ник: ${username}
 🎮 ID игрока: ${playerID}
-💎 Пакет: ${selected.name}
-💰 Сумма: ${selected.price} сом
-💳 Оплата: QR`
-    );
+💎 Товар: ${item}
+💳 Оплата: QR`;
 
-    addHistory({
-        username,
-        item: selected.name,
-        amount: selected.price,
-        date: new Date().toLocaleString()
+    fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ chat_id: CHAT_ID, text: message })
+    })
+    .then(res => {
+        if(res.ok){
+            alert("✅ Заказ отправлен! Проверьте Telegram");
+            addPaymentHistory({item, date: new Date().toLocaleString()});
+        } else {
+            alert("❌ Ошибка отправки. Попробуйте позже");
+        }
+    })
+    .catch(()=>{
+        alert("❌ Ошибка отправки. Попробуйте позже");
     });
-
-    window.open(`https://t.me/shurik_freefire?text=${text}`, "_blank");
 };
 
 function goBack(){
@@ -184,4 +189,3 @@ function goBack(){
 
 </body>
 </html>
-
