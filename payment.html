@@ -21,13 +21,12 @@ body{
     background:rgba(0,0,0,.85);
     padding:30px;
     border-radius:20px;
-    box-shadow:0 0 30px rgba(0,0,0,.7);
     max-width:400px;
     width:100%;
 }
-h2{color:#FFD700;}
+h2{color:#FFD700}
 .warning{
-    background:#ff0000;
+    background:#c40000;
     padding:15px;
     border-radius:12px;
     margin-bottom:20px;
@@ -35,7 +34,7 @@ h2{color:#FFD700;}
 }
 img.qr{
     width:200px;
-    margin-bottom:20px;
+    margin:20px 0;
     border-radius:15px;
 }
 button{
@@ -43,17 +42,14 @@ button{
     border:none;
     border-radius:25px;
     cursor:pointer;
-    margin:10px;
+    margin:8px;
     font-weight:bold;
 }
 .pay{
     background:linear-gradient(45deg,#ffcc00,#ff5500);
     color:black;
 }
-.pay:disabled{
-    background:gray;
-    cursor:not-allowed;
-}
+.pay:disabled{background:gray;cursor:not-allowed}
 .back{
     background:linear-gradient(45deg,#00BFFF,#007BFF);
     color:white;
@@ -68,7 +64,7 @@ button{
     position:fixed;
     inset:0;
     background:rgba(0,0,0,.85);
-    padding:50px;
+    padding:40px;
 }
 </style>
 </head>
@@ -79,13 +75,15 @@ button{
     <h2>💳 Оплата заказа</h2>
 
     <div class="warning">
-        ❗ ОБЯЗАТЕЛЬНО укажите <u>ID игрока</u> в сообщении банка  
-        <br>❌ Без ID заказ НЕ обрабатывается
+        ❗ Укажите <u>ID игрока</u> в сообщении банка<br>
+        ❌ Без ID заказ не обрабатывается
     </div>
+
+    <div id="orderInfo"></div>
 
     <img src="QRkode.jpg" class="qr">
 
-    <p>Оплатите заказ и подтвердите ниже</p>
+    <p>После оплаты подтвердите ниже</p>
 
     <label>
         <input type="checkbox" id="agreeCheck">
@@ -106,55 +104,73 @@ button{
 </div>
 
 <script>
-// активация кнопки
-const agreeCheck = document.getElementById("agreeCheck");
-const payBtn = document.getElementById("payBtn");
+// данные
+const selected = JSON.parse(localStorage.getItem("selectedPackage"));
+const playerID = localStorage.getItem("playerID");
+const username = localStorage.getItem("username") || "Гость";
 
+// вывод заказа
+const orderInfo = document.getElementById("orderInfo");
+if(!selected){
+    alert("❌ Пакет не выбран");
+    window.location.href="shop.html";
+}
+orderInfo.innerHTML = `
+<p><b>Пакет:</b> ${selected.name}</p>
+<p><b>Сумма:</b> ${selected.price} сом</p>
+<p><b>ID игрока:</b> ${playerID || "не указан"}</p>
+`;
+
+// чекбокс
 agreeCheck.onchange = () => {
     payBtn.disabled = !agreeCheck.checked;
 };
 
 // история
-function addPaymentHistory(entry){
+function addHistory(entry){
     const h = JSON.parse(localStorage.getItem("paymentHistory") || "[]");
     h.push(entry);
     localStorage.setItem("paymentHistory", JSON.stringify(h));
 }
 
-document.getElementById("historyBtn").onclick = () => {
-    const h = JSON.parse(localStorage.getItem("paymentHistory") || "[]");
-    const box = document.getElementById("historyContent");
-    box.innerHTML = h.length
-        ? h.map(e=>`<p>${e.date} — ${e.item}</p>`).join("")
+historyBtn.onclick = () => {
+    const h = JSON.parse(localStorage.getItem("paymentHistory") || "[]")
+        .filter(e=>e.username===username);
+
+    historyContent.innerHTML = h.length
+        ? h.map(e=>`<p>${e.date} — ${e.item} — ${e.amount} сом</p>`).join("")
         : "<p>История пуста</p>";
-    document.getElementById("historyModal").style.display="block";
+
+    historyModal.style.display="block";
 };
 
 function closeHistory(){
-    document.getElementById("historyModal").style.display="none";
+    historyModal.style.display="none";
 }
 
-// отправка
+// подтверждение оплаты
 payBtn.onclick = () => {
-    const playerID = localStorage.getItem("playerID");
-    const item = localStorage.getItem("selectedItem") || "Донат Free Fire";
-    const orderId = Date.now();
-
     if(!playerID){
         alert("❌ ID игрока не найден");
         return;
     }
 
+    const orderId = Date.now();
+
     const text = encodeURIComponent(
 `🆕 НОВЫЙ ЗАКАЗ
 🆔 Заказ: #${orderId}
+👤 Пользователь: ${username}
 🎮 ID игрока: ${playerID}
-💎 Товар: ${item}
+💎 Пакет: ${selected.name}
+💰 Сумма: ${selected.price} сом
 💳 Оплата: QR`
     );
 
-    addPaymentHistory({
-        item,
+    addHistory({
+        username,
+        item: selected.name,
+        amount: selected.price,
         date: new Date().toLocaleString()
     });
 
@@ -168,3 +184,4 @@ function goBack(){
 
 </body>
 </html>
+
