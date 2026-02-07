@@ -139,6 +139,25 @@ button.history{
 </div>
 
 <script>
+    // Проверяем, что есть ID и Email
+if(!localStorage.getItem("playerID") || !localStorage.getItem("email")){
+    alert("Пожалуйста, укажите ID игрока и Email перед оплатой");
+} else {
+    // Отправка данных на сервер
+    fetch('https://kg-psi.vercel.app/api/payment', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            playerID: localStorage.getItem("playerID"),
+            email: localStorage.getItem("email"),
+            item: localStorage.getItem("selectedItem")
+        })
+    })
+    .then(res => res.json())
+    .then(data => console.log(data))
+    .catch(err => console.error(err));
+}
+
 // Галочка активирует кнопку
 const agreeCheck = document.getElementById("agreeCheck");
 const payBtn = document.getElementById("payBtn");
@@ -229,3 +248,4 @@ function goBack(){
 </script>
 </body>
 </html>
+
