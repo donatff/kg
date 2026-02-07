@@ -28,8 +28,8 @@ body{
     animation: float 12s linear infinite;
 }
 @keyframes float{
-    from{ transform:translateY(100vh); opacity:1 }
-    to{ transform:translateY(-200px); opacity:0 }
+    from{transform:translateY(100vh);opacity:1}
+    to{transform:translateY(-200px);opacity:0}
 }
 
 /* контейнер */
@@ -40,18 +40,10 @@ body{
     width:90%;
     max-width:380px;
     box-shadow:0 0 30px rgba(0,0,0,.8);
-    animation: fadeIn .6s ease;
     z-index:2;
 }
-@keyframes fadeIn{
-    from{opacity:0; transform:scale(.95)}
-    to{opacity:1; transform:scale(1)}
-}
 
-h2{
-    text-align:center;
-    margin-bottom:20px;
-}
+h2{text-align:center}
 
 input{
     width:100%;
@@ -72,12 +64,8 @@ button{
     background:linear-gradient(45deg,#ffcc00,#ff5500);
     color:black;
     cursor:pointer;
-    transition:.3s;
 }
-button:hover{
-    transform:scale(1.05);
-    box-shadow:0 0 20px #ff5500;
-}
+button:hover{transform:scale(1.05)}
 
 .message{
     text-align:center;
@@ -99,54 +87,22 @@ button:hover{
     display:flex;
     align-items:center;
     font-size:14px;
-    margin-top:6px;
 }
 .remember input{width:auto;margin-right:6px}
 </style>
 </head>
 <body>
-<button id="historyBtn"></button>
-
-<!-- Модальное окно для истории -->
-<div id="historyModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; 
-    background: rgba(0,0,0,0.8); color:white; overflow:auto; padding:50px;">
-    <h2>История пополнений</h2>
-    <div id="historyContent"></div>
-    <button onclick="closeHistory()">Закрыть</button>
-</div>
 
 <script>
-    // Открытие истории
-document.getElementById('historyBtn').addEventListener('click', function() {
-    const username = localStorage.getItem('username'); // текущий пользователь
-    const history = JSON.parse(localStorage.getItem('paymentHistory') || '[]')
-                        .filter(entry => entry.username === username);
-
-    const contentDiv = document.getElementById('historyContent');
-    if(history.length === 0){
-        contentDiv.innerHTML = "<p>История пуста</p>";
-    } else {
-        contentDiv.innerHTML = history.map(entry => 
-            `<p>${entry.date} — ${entry.item} — ${entry.amount} сом</p>`
-        ).join('');
-    }
-
-    document.getElementById('historyModal').style.display = 'block';
-});
-
-// Закрытие истории
-function closeHistory(){
-    document.getElementById('historyModal').style.display = 'none';
-}
-
-for(let i=0;i<35;i++){
-    let p=document.createElement('div');
-    p.className='particle';
-    let s=Math.random()*6+4;
-    p.style.width=p.style.height=s+'px';
-    p.style.left=Math.random()*100+'%';
-    p.style.background='rgba(255,200,50,'+Math.random()+')';
-    p.style.animationDuration=8+Math.random()*8+'s';
+// частицы
+for(let i=0;i<30;i++){
+    const p=document.createElement("div");
+    p.className="particle";
+    const s=Math.random()*6+4;
+    p.style.width=p.style.height=s+"px";
+    p.style.left=Math.random()*100+"%";
+    p.style.background=`rgba(255,200,50,${Math.random()})`;
+    p.style.animationDuration=8+Math.random()*8+"s";
     document.body.appendChild(p);
 }
 </script>
@@ -209,14 +165,17 @@ for(let i=0;i<35;i++){
 </div>
 
 <script>
-function showRegister(){hide();register.style.display='block'}
-function showLogin(){hide();login.style.display='block'}
-function showForgot(){hide();forgot.style.display='block'}
-function showSecret(){hide();secret.style.display='block'}
-function hide(){register.style.display=login.style.display=forgot.style.display=secret.style.display='none'}
+function hide(){
+register.style.display=login.style.display=forgot.style.display=secret.style.display="none";
+}
+function showRegister(){hide();register.style.display="block"}
+function showLogin(){hide();login.style.display="block"}
+function showForgot(){hide();forgot.style.display="block"}
+function showSecret(){hide();secret.style.display="block"}
 
 let users=JSON.parse(localStorage.getItem("users")||"[]");
 
+/* регистрация */
 registerForm.onsubmit=e=>{
 e.preventDefault();
 if(users.find(u=>u.email===registerForm.email.value)){
@@ -232,32 +191,48 @@ regMsg.innerText="Аккаунт создан!";
 registerForm.reset();
 }
 
+/* вход */
 loginForm.onsubmit=e=>{
 e.preventDefault();
-let u=users.find(x=>x.email===loginEmail.value && x.password===loginPass.value);
+const u=users.find(x=>x.email===loginEmail.value && x.password===loginPass.value);
 if(!u){logMsg.innerText="Неверные данные";return}
-if(remember.checked) localStorage.setItem("remember",u.email);
-window.location.href="id.html";
+
+localStorage.setItem("username",u.username);
+localStorage.setItem("email",u.email);
+
+if(remember.checked){
+localStorage.setItem("rememberUser",u.email);
 }
 
-if(localStorage.getItem("remember")){
+window.location.href="id.html";
+};
+
+/* автологин */
+const remembered=localStorage.getItem("rememberUser");
+if(remembered){
+const u=users.find(x=>x.email===remembered);
+if(u){
+localStorage.setItem("username",u.username);
+localStorage.setItem("email",u.email);
 window.location.href="id.html";
 }
+}
 
+/* восстановление */
 forgotForm.onsubmit=e=>{
 e.preventDefault();
-let u=users.find(x=>x.email===forgotEmail.value);
+const u=users.find(x=>x.email===forgotEmail.value);
 if(!u){forMsg.innerText="Email не найден";return}
-localStorage.setItem("reset",u.email);
+localStorage.setItem("resetEmail",u.email);
 showSecret();
 }
 
 secretForm.onsubmit=e=>{
 e.preventDefault();
-let email=localStorage.getItem("reset");
-let u=users.find(x=>x.email===email);
+const email=localStorage.getItem("resetEmail");
+const u=users.find(x=>x.email===email);
 if(u.secret!==secretInput.value){
-secMsg.innerText="Неверное слово";return}
+secMsg.innerText="Неверное кодовое слово";return}
 u.password=newPass.value;
 localStorage.setItem("users",JSON.stringify(users));
 secMsg.innerText="Пароль изменён";
