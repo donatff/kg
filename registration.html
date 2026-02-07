@@ -204,9 +204,9 @@ if(remember.checked){
 localStorage.setItem("rememberUser",u.email);
 }
 
-window.location.href="id.html";
-};
-
+    // Переход к магазину
+    window.location.href = "shop.html";
+}
 /* автологин */
 const remembered=localStorage.getItem("rememberUser");
 if(remembered){
@@ -242,3 +242,4 @@ setTimeout(showLogin,1200);
 
 </body>
 </html>
+
