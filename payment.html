@@ -104,6 +104,8 @@ button.history{
 </style>
 </head>
 <body>
+    <input type="text" id="playerID" placeholder="Введите ваш ID">
+
 
 <div class="container">
     <h2>💳 Оплата заказа</h2>
@@ -139,6 +141,13 @@ button.history{
 </div>
 
 <script>
+    const playerID = document.getElementById("playerID").value;
+
+if(!playerID){
+    alert("Введите ID перед оплатой");
+    return; // не отправляем пустой запрос
+}
+
     // Проверяем, что есть ID и Email
 if(!localStorage.getItem("playerID") || !localStorage.getItem("email")){
     alert("Пожалуйста, укажите ID игрока и Email перед оплатой");
@@ -245,7 +254,20 @@ function sendOrder(){
 function goBack(){
     window.location.href = "shop.html";
 }
+    fetch('https://kg-psi.vercel.app/api/payment', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    playerID: document.getElementById('playerID').value,
+    email: document.getElementById('email').value
+  })
+})
+.then(res => res.json())
+.then(data => console.log(data))
+.catch(err => console.error(err));
+
 </script>
 </body>
 </html>
+
 
