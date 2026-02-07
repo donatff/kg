@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Оплата заказа — Free Fire</title>
 <style>
-body{
+body {
     margin:0;
     min-height:100vh;
     display:flex;
     justify-content:center;
     align-items:center;
     background:url("backgroundphoto2.jpg") no-repeat center/cover;
-    font-family:Arial,sans-serif;
+    font-family:Arial, sans-serif;
     color:white;
 }
 .container{
@@ -24,7 +24,11 @@ body{
     max-width:400px;
     width:100%;
 }
-h2{color:#FFD700;}
+h2{
+    margin-bottom:20px;
+    color:#FFD700;
+    text-shadow:0 0 10px #FFD700;
+}
 .warning{
     background:#ff0000;
     padding:15px;
@@ -34,9 +38,9 @@ h2{color:#FFD700;}
     animation: blink 1s infinite;
 }
 @keyframes blink {
-    0% { opacity:1; box-shadow:0 0 5px red;}
-    50% { opacity:0.6; box-shadow:0 0 25px red;}
-    100% { opacity:1; box-shadow:0 0 5px red;}
+    0% { box-shadow:0 0 5px red; opacity:1; }
+    50% { box-shadow:0 0 25px red; opacity:0.6; }
+    100% { box-shadow:0 0 5px red; opacity:1; }
 }
 img.qr{
     width:200px;
@@ -45,65 +49,89 @@ img.qr{
 }
 button{
     padding:12px 30px;
+    font-size:16px;
     border:none;
     border-radius:25px;
     cursor:pointer;
     margin:10px;
     font-weight:bold;
+    transition:0.3s;
 }
-.pay{
+button.pay{
     background:linear-gradient(45deg,#ffcc00,#ff5500);
     color:black;
 }
-.pay:disabled{
+button.pay:disabled{
     background:gray;
     cursor:not-allowed;
 }
-.back{
+button.pay.active {
+    box-shadow:0 0 20px #ffcc00,0 0 40px #ff5500;
+    animation: glow 1s infinite alternate;
+}
+@keyframes glow {
+    from { box-shadow:0 0 10px #ffcc00,0 0 20px #ff5500; }
+    to { box-shadow:0 0 25px #ffcc00,0 0 50px #ff5500; }
+}
+button.back{
     background:linear-gradient(45deg,#00BFFF,#007BFF);
     color:white;
 }
-.history{
+button.history{
     background:#444;
     color:#FFD700;
     font-size:14px;
+    padding:8px 20px;
+}
+.loader, .success{
+    display:none;
+    font-size:40px;
+    margin:20px auto;
 }
 .modal{
     display:none;
     position:fixed;
-    inset:0;
-    background:rgba(0,0,0,.85);
+    top:0; left:0; width:100%; height:100%;
+    background:rgba(0,0,0,0.85);
+    color:white;
+    overflow:auto;
     padding:50px;
+    text-align:center;
+}
+.modal button{
+    margin-top:20px;
 }
 </style>
 </head>
-
 <body>
 
 <div class="container">
     <h2>💳 Оплата заказа</h2>
 
     <div class="warning">
-        ❗ ВАЖНО! Укажите <u>ID игрока</u> при оплате  
-        <br>❌ Без ID заказ НЕ обрабатывается
+        ❗ ВАЖНО!<br>
+        Обязательно укажите <u>ID игрока</u> при оплате.<br>
+        ❌ Без ID заказ НЕ ОБРАБАТЫВАЕТСЯ
     </div>
 
-    <img src="QRkode.jpg" class="qr">
-
+    <img src="QRkode.jpg" alt="QR-код" class="qr">
     <p>Оплатите заказ и подтвердите ниже</p>
 
     <label>
-        <input type="checkbox" id="agreeCheck">
-        Я оплатил и указал свой ID
+        <input type="checkbox" id="agreeCheck"> Я оплатил и указал свой ID
     </label>
 
     <br><br>
 
     <button class="pay" id="payBtn" disabled>Я оплатил</button>
+    <div class="loader" id="loader">⏳</div>
+    <div class="success" id="success">✅</div>
+
     <button class="back" onclick="goBack()">← Назад</button>
-    <button class="history" id="historyBtn">История</button>
+    <button class="history" id="historyBtn">История перевода</button>
 </div>
 
+<!-- Модальное окно истории -->
 <div id="historyModal" class="modal">
     <h2>История пополнений</h2>
     <div id="historyContent"></div>
@@ -111,81 +139,93 @@ button{
 </div>
 
 <script>
-// ТВОЙ TELEGRAM BOT
-const TOKEN = "ВАШ_ТОКЕН_БОТА"; // <-- вставь сюда токен бота
-const CHAT_ID = "ВАШ_CHAT_ID";    // <-- вставь сюда свой chat_id
-
-// активация кнопки
+// Галочка активирует кнопку
 const agreeCheck = document.getElementById("agreeCheck");
 const payBtn = document.getElementById("payBtn");
+agreeCheck.addEventListener("change", function(){
+    payBtn.disabled = !this.checked;
+    if(this.checked) payBtn.classList.add("active");
+    else payBtn.classList.remove("active");
+});
 
-agreeCheck.onchange = () => {
-    payBtn.disabled = !agreeCheck.checked;
-};
-
-// история
-function addPaymentHistory(entry){
-    const h = JSON.parse(localStorage.getItem("paymentHistory") || "[]");
-    h.push(entry);
-    localStorage.setItem("paymentHistory", JSON.stringify(h));
+// История перевода
+function addPaymentHistory(username, item, amount, date){
+    let history = JSON.parse(localStorage.getItem('paymentHistory') || '[]');
+    history.push({ username, item, amount, date });
+    localStorage.setItem('paymentHistory', JSON.stringify(history));
 }
 
-document.getElementById("historyBtn").onclick = () => {
-    const h = JSON.parse(localStorage.getItem("paymentHistory") || "[]");
-    const box = document.getElementById("historyContent");
-    box.innerHTML = h.length
-        ? h.map(e=>`<p>${e.date} — ${e.item}</p>`).join("")
-        : "<p>История пуста</p>";
-    document.getElementById("historyModal").style.display="block";
-};
+const historyBtn = document.getElementById('historyBtn');
+historyBtn.addEventListener('click', function(){
+    const username = localStorage.getItem('username');
+    const history = JSON.parse(localStorage.getItem('paymentHistory') || '[]')
+                        .filter(entry => entry.username === username);
+    const content = document.getElementById('historyContent');
+    if(history.length === 0) content.innerHTML = "<p>История пуста</p>";
+    else content.innerHTML = history.map(e => `<p>${e.date} — ${e.item} — ${e.amount} сом</p>`).join('');
+    document.getElementById('historyModal').style.display = 'block';
+});
 
 function closeHistory(){
-    document.getElementById("historyModal").style.display="none";
+    document.getElementById('historyModal').style.display = 'none';
 }
 
-// отправка
-payBtn.onclick = () => {
-    const playerID = localStorage.getItem("playerID");
-    const username = localStorage.getItem("username");
-    const selectedItemObj = JSON.parse(localStorage.getItem("selectedPackage") || '{}');
-    const item = selectedItemObj.name || "Донат Free Fire";
+// Отправка заказа
+payBtn.addEventListener("click", sendOrder);
 
-    if(!playerID || !username){
-        alert("❌ Не найдены данные: никнейм или ID игрока");
+function sendOrder(){
+    const playerID = localStorage.getItem("playerID");
+    const selectedItem = localStorage.getItem("selectedItem");
+    const username = localStorage.getItem("username");
+    const email = localStorage.getItem("email");
+
+    if(!playerID || !selectedItem || !username || !email){
+        alert("❌ Ошибка данных. Вернитесь и начните заново.");
         return;
     }
 
-    const orderId = Date.now();
+    payBtn.disabled = true;
+    document.getElementById("loader").style.display = "block";
+    const statusText = document.getElementById("success");
+    statusText.style.display = "none";
+
+    const TOKEN = "8514813969:AAFkIE6dsAiQs2IrgPWd3xV6WTKDyupF05g";
+    const CHAT_ID = "426389082";
+
+    const orderId = Date.now() + "-" + Math.floor(Math.random()*1000);
     const message = 
 `🆕 НОВЫЙ ЗАКАЗ
 🆔 Заказ: #${orderId}
-👤 Ник: ${username}
+
+👤 Имя: ${username}
+📧 Email: ${email}
 🎮 ID игрока: ${playerID}
-💎 Товар: ${item}
+
+💎 Товар: ${selectedItem}
 💳 Оплата: QR`;
 
-    fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ chat_id: CHAT_ID, text: message })
-    })
-    .then(res => {
-        if(res.ok){
-            alert("✅ Заказ отправлен! Проверьте Telegram");
-            addPaymentHistory({item, date: new Date().toLocaleString()});
+    // Отправка через GET для уменьшения проблем с CORS
+    fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(message)}`)
+    .then(response => {
+        document.getElementById("loader").style.display = "none";
+        if(response.ok){
+            statusText.style.display = "block";
+            addPaymentHistory(username, selectedItem, 95, new Date().toLocaleString());
         } else {
-            alert("❌ Ошибка отправки. Попробуйте позже");
+            alert("❌ Ошибка отправки. Попробуйте позже.");
+            payBtn.disabled = false;
         }
     })
     .catch(()=>{
-        alert("❌ Ошибка отправки. Попробуйте позже");
+        document.getElementById("loader").style.display = "none";
+        alert("❌ Ошибка отправки. Попробуйте позже.");
+        payBtn.disabled = false;
     });
-};
+}
 
 function goBack(){
-    window.location.href="shop.html";
+    window.location.href = "shop.html";
 }
 </script>
-
 </body>
 </html>
